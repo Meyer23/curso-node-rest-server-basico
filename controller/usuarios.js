@@ -12,8 +12,11 @@ const UsuariosGet = (req, res = response) => {
 
 const UsuariosPut = (req, res = response) => {
 
+    const { id } = req.params;
+
     res.json({
-        msg: 'put API - controller'
+        msg: 'put API - controller',
+        id
     })
 }
 
