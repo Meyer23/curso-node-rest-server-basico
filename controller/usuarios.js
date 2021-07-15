@@ -1,32 +1,57 @@
 const { response } = require('express');
+const bcryptjs = require('bcryptjs');
 
-const UsuariosGet = (req, res = response) => {
-    const { name, id, page = "1" } = req.query
+
+
+const Usuario = require('../models/usuario')
+
+const UsuariosGet = async(req, res = response) => {
+
+    const { limite = 5, desde = 0 } = req.query;
+    const query = { estado: true }
+
+    const [total, usuarios] = await Promise.all([
+        Usuario.countDocuments(query),
+        Usuario.find(query)
+        .skip(Number(desde))
+        .limit(Number(limite))
+    ])
     res.json({
-        msg: 'get API - controller',
-        name,
-        id,
-        page
+        total,
+        usuarios
     })
 }
 
-const UsuariosPut = (req, res = response) => {
+const UsuariosPut = async(req, res = response) => {
 
     const { id } = req.params;
+    const { _id, password, google, correo, ...resto } = req.body;
 
-    res.json({
-        msg: 'put API - controller',
-        id
-    })
+    //TODO validar contra base de detos
+
+    if (password) {
+        const salt = bcryptjs.genSaltSync();
+        resto.password = bcryptjs.hashSync(password, salt);
+    }
+
+    const usuario = await Usuario.findByIdAndUpdate(id, resto);
+
+    res.json(usuario)
 }
 
-const UsuariosPost = (req, res = response) => {
+const UsuariosPost = async(req, res = response) => {
 
-    const { nombre, edad } = req.body;
+
+
+    const { nombre, correo, password, rol } = req.body;
+    const usuario = new Usuario({ nombre, correo, password, rol });
+
+    const salt = bcryptjs.genSaltSync();
+    usuario.password = bcryptjs.hashSync(password, salt);
+
+    await usuario.save();
     res.json({
-        msg: 'post API - controller',
-        nombre,
-        edad
+        usuario
     })
 }
 
@@ -36,10 +61,11 @@ const UsuariosPatch = (req, res = response) => {
     })
 }
 
-const UsuariosDelete = (req, res = response) => {
-    res.json({
-        msg: 'delete API - controller'
-    })
+const UsuariosDelete = async(req, res = response) => {
+    const { id } = req.params;
+    // const usuario = await Usuario.findOneAndDelete(id);
+    const usuario = await Usuario.findByIdAndUpdate(id, { estado: false });
+    res.json(usuario)
 }
 
 module.exports = {
